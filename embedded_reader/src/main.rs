@@ -1,4 +1,10 @@
+extern crate redis;
+use redis::Commands;
+
 extern crate serial;
+
+mod measurement;
+use measurement::Measurement;
 
 use std::env;
 use std::io::*;
@@ -7,12 +13,6 @@ use std::time::Duration;
 
 struct Args {
     port: String,
-}
-
-#[derive(Debug)]
-struct Measurement {
-    small_particle_count: i32,
-    large_particle_count: i32,
 }
 
 fn main() {
@@ -69,28 +69,22 @@ fn read<T: serial::SerialPort>(port: &mut T) -> Result<()> {
 }
 
 fn process_line(line: &String) -> Result<()> {
-    let measurement = parse_line(&line)?;
-    enqueue(measurement)
+    match Measurement::from_string(&line) {
+        Some(measurement) => enqueue(measurement).map_err(|e| Error::new(ErrorKind::Other, e)),
+        None => Err(Error::new(ErrorKind::InvalidData, format!(
+            "Cannot parse measurement for line: \"{}\"", line
+        ))),
+    }
 }
 
-fn parse_line(line: &String) -> Result<Measurement> {
-    let values: Vec<_> = line.trim().split(',').collect();
-
-    if values.len() == 2 {
-        if let (Ok(small), Ok(big)) = (values[0].parse(), values[1].parse()) {
-            return Ok(Measurement {
-                small_particle_count: small,
-                large_particle_count: big,
-            })
-        }
+fn enqueue(measurement: Measurement) -> redis::RedisResult<()> {
+    let client = redis::Client::open("redis://127.0.0.1/")?;
+    let connection = client.get_connection()?;
+    let result = connection.rpush(measurement::REDIS_KEY, measurement.to_string());
+    
+    if result.is_ok() {
+        println!("Enqueued measurement {}", measurement.to_string());
     }
 
-    Err(Error::new(ErrorKind::InvalidData, format!(
-        "Cannot parse measurement for line: \"{}\"", line
-    ))) 
-}
-
-fn enqueue(measurement: Measurement) -> Result<()> {
-    println!("TODO: enqueue measurement {:?}", measurement);
-    Ok(())
+    result
 }
