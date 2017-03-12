@@ -1,25 +1,17 @@
 extern crate chrono;
-
 extern crate redis;
-use redis::Commands;
-
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 extern crate serde_json;
-
 extern crate serial;
 
 mod measurement;
-use measurement::{Measurement, REDIS_LIST_KEY};
+mod read;
 
+use measurement::Measurement;
+use redis::Commands;
 use std::env;
-use std::io::*;
+use std::io::{Error, ErrorKind, Result};
 use std::process;
-use std::time::Duration;
-
-struct Args {
-    port: String,
-}
 
 fn main() {
     if let Err(err) = run() {
@@ -29,13 +21,6 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let args = parse_args()?;
-    let mut port = serial::open(&args.port)?;
-    configure(&mut port)?;
-    read(&mut port)
-}
-
-fn parse_args() -> Result<Args> {
     let args: Vec<_> = env::args().collect();
 
     if args.len() < 2 {
@@ -46,38 +31,12 @@ fn parse_args() -> Result<Args> {
         )));
     }
 
-    Ok(Args {
-        port: args[1].clone(),
-    })
+    let port = &args[1];
+    read::read_lines(port, process_line)
 }
 
-fn configure<T: serial::SerialPort>(port: &mut T) -> serial::Result<()> {
-    port.configure(&serial::PortSettings {
-        baud_rate: serial::Baud9600,
-        char_size: serial::Bits8,
-        parity: serial::ParityNone,
-        stop_bits: serial::Stop1,
-        flow_control: serial::FlowNone
-    })?;
-
-    port.set_timeout(Duration::from_secs(90))
-}
-
-fn read<T: serial::SerialPort>(port: &mut T) -> Result<()> {
-    let mut reader = BufReader::new(port);
-    let mut buffer = String::new();
-
-    println!("Entering read loop");
-
-    loop {
-        reader.read_line(&mut buffer)?;
-        process_line(&buffer)?;
-        buffer.clear();
-    }
-}
-
-fn process_line(line: &String) -> Result<()> {
-    match Measurement::from_serial_line(&line) {
+fn process_line(line: &str) -> Result<()> {
+    match Measurement::from_line(&line) {
         Some(measurement) => enqueue(measurement).map_err(|e| Error::new(ErrorKind::Other, e)),
         None => Err(Error::new(ErrorKind::InvalidData, format!(
             "Cannot parse measurement for line: \"{}\"", line
@@ -87,8 +46,10 @@ fn process_line(line: &String) -> Result<()> {
 
 fn enqueue(measurement: Measurement) -> redis::RedisResult<()> {
     let json = measurement.to_json();
-    let connection = redis::Client::open("redis://127.0.0.1/")?.get_connection()?;
-    let result = connection.rpush(REDIS_LIST_KEY, &json);
+
+    let result = redis::Client::open("redis://127.0.0.1/")?
+        .get_connection()?
+        .rpush("measurements", &json);
     
     if result.is_ok() {
         println!("Enqueued measurement {}", json);

@@ -1,8 +1,6 @@
 use chrono::{DateTime, Local};
 use serde_json;
 
-pub const REDIS_LIST_KEY: &'static str = "measurements";
-
 #[derive(Serialize)]
 pub struct Measurement {
     pub time: DateTime<Local>,
@@ -11,7 +9,7 @@ pub struct Measurement {
 }
 
 impl Measurement {
-    pub fn from_serial_line(line: &String) -> Option<Measurement> {
+    pub fn from_line(line: &str) -> Option<Measurement> {
         let values: Vec<_> = line.trim().split(',').collect();
 
         if values.len() != 2 {
