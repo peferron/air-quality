@@ -1,4 +1,4 @@
-pub const REDIS_KEY: &'static str = "measurements";
+pub const MEASUREMENTS_REDIS_KEY: &'static str = "measurements";
 
 #[derive(Debug)]
 pub struct Measurement {
