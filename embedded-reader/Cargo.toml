@@ -1,0 +1,12 @@
+[package]
+name = "embedded-reader"
+version = "0.1.0"
+authors = ["Pierre-Emile Ferron <peferron@gmail.com>"]
+
+[dependencies]
+chrono = { version = "0.3", features = ["serde"] }
+redis = "0.8.0"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
+serial = "0.3"

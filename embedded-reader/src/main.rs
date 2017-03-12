@@ -1,9 +1,16 @@
-extern crate common;
+extern crate chrono;
 
 extern crate redis;
 use redis::Commands;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+
 extern crate serial;
+
+mod measurement;
+use measurement::{Measurement, REDIS_LIST_KEY};
 
 use std::env;
 use std::io::*;
@@ -70,7 +77,7 @@ fn read<T: serial::SerialPort>(port: &mut T) -> Result<()> {
 }
 
 fn process_line(line: &String) -> Result<()> {
-    match common::Measurement::from_string(&line) {
+    match Measurement::from_serial_line(&line) {
         Some(measurement) => enqueue(measurement).map_err(|e| Error::new(ErrorKind::Other, e)),
         None => Err(Error::new(ErrorKind::InvalidData, format!(
             "Cannot parse measurement for line: \"{}\"", line
@@ -78,13 +85,13 @@ fn process_line(line: &String) -> Result<()> {
     }
 }
 
-fn enqueue(measurement: common::Measurement) -> redis::RedisResult<()> {
-    let client = redis::Client::open("redis://127.0.0.1/")?;
-    let connection = client.get_connection()?;
-    let result = connection.rpush(common::MEASUREMENTS_REDIS_KEY, measurement.to_string());
+fn enqueue(measurement: Measurement) -> redis::RedisResult<()> {
+    let json = measurement.to_json();
+    let connection = redis::Client::open("redis://127.0.0.1/")?.get_connection()?;
+    let result = connection.rpush(REDIS_LIST_KEY, &json);
     
     if result.is_ok() {
-        println!("Enqueued measurement {}", measurement.to_string());
+        println!("Enqueued measurement {}", json);
     }
 
     result
