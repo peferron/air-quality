@@ -1,0 +1,6 @@
+[package]
+name = "embedded_reader"
+version = "0.1.0"
+authors = ["Pierre-Emile Ferron <peferron@gmail.com>"]
+
+[dependencies]
