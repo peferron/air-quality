@@ -31,12 +31,20 @@ fn run() -> Result<()> {
     let args = Args::from_env()?;
     println!("Starting with {:?}", args);
 
-    let redis_conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
+    let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
+
+    loop {
+        let measurement = Measurement::from_line("123,456")?;
+        let json = measurement.to_json();
+        conn.lpush(&args.redis_key, &json)?;
+        println!("Enqueued measurement {}", json);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 
     for line in read_lines(&args.serial_port)? {
         let measurement = Measurement::from_line(&line?)?;
         let json = measurement.to_json();
-        redis_conn.lpush(&args.redis_key, &json)?;
+        conn.lpush(&args.redis_key, &json)?;
         println!("Enqueued measurement {}", json);
     }
 
