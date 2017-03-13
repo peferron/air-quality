@@ -21,7 +21,7 @@ fn main() {
     if let Err(e) = run() {
         match e {
             Error::Args(usage) => println!("{}", usage),
-            _ => println!("{:?}", e),
+            _ => println!("Fatal error: {:?}", e),
         }
         process::exit(1);
     }
@@ -67,10 +67,11 @@ fn upload(jsons: &[String], client: &Client, url: &str) -> Result<()> {
     println!("Uploading {} measurements", jsons.len());
 
     let json = format!("[{}]", jsons.join(","));
-
     let mut response = client.post(url).body(&json).send()?;
     let mut response_body = String::new();
     response.read_to_string(&mut response_body)?;
+
+    println!("Received response: {}", response_body);
 
     let parsed_response: Response = serde_json::from_str(&response_body)?;
 

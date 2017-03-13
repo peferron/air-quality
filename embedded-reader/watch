@@ -1,0 +1,3 @@
+#!/bin/sh
+
+rerun -cx -p '**/*.rs' -- cargo run /dev/cu.usbserial redis://127.0.0.1 measurements

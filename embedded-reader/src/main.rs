@@ -21,7 +21,7 @@ fn main() {
     if let Err(e) = run() {
         match e {
             Error::Args(usage) => println!("{}", usage),
-            _ => println!("{:?}", e),
+            _ => println!("Fatal error: {:?}", e),
         }
         process::exit(1);
     }
@@ -33,13 +33,13 @@ fn run() -> Result<()> {
 
     let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
 
-    loop {
-        let measurement = Measurement::from_line("123,456")?;
-        let json = measurement.to_json();
-        conn.lpush(&args.redis_key, &json)?;
-        println!("Enqueued measurement {}", json);
-        std::thread::sleep(std::time::Duration::from_secs(1));
-    }
+    // loop {
+    //     let measurement = Measurement::from_line("123,456")?;
+    //     let json = measurement.to_json();
+    //     conn.lpush(&args.redis_key, &json)?;
+    //     println!("Enqueued measurement {}", json);
+    //     std::thread::sleep(std::time::Duration::from_secs(1));
+    // }
 
     for line in read_lines(&args.serial_port)? {
         let measurement = Measurement::from_line(&line?)?;
