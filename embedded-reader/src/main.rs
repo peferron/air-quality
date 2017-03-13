@@ -4,56 +4,57 @@ extern crate redis;
 extern crate serde_json;
 extern crate serial;
 
+mod args;
+mod error;
 mod measurement;
-mod read;
 
+use args::Args;
+use error::{Error, Result};
 use measurement::Measurement;
 use redis::Commands;
-use std::env;
-use std::io::{Error, ErrorKind, Result};
+use serial::*;
+use std::time::Duration;
+use std::io::{BufRead, BufReader, Lines};
 use std::process;
 
 fn main() {
-    if let Err(err) = run() {
-        println!("{}", err);
+    if let Err(e) = run() {
+        match e {
+            Error::Args(usage) => println!("{}", usage),
+            _ => println!("{:?}", e),
+        }
         process::exit(1);
     }
 }
 
 fn run() -> Result<()> {
-    let args: Vec<_> = env::args().collect();
+    let args = Args::from_env()?;
+    println!("Starting with {:?}", args);
 
-    if args.len() < 2 {
-        return Err(Error::new(ErrorKind::InvalidInput, format!(
-            "Usage: {path} PORT\n\
-             Example: {path} /dev/cu.usbserial",
-             path=args[0]
-        )));
-    }
+    let redis_conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
 
-    let port = &args[1];
-    read::read_lines(port, process_line)
-}
-
-fn process_line(line: &str) -> Result<()> {
-    match Measurement::from_line(&line) {
-        Some(measurement) => enqueue(measurement).map_err(|e| Error::new(ErrorKind::Other, e)),
-        None => Err(Error::new(ErrorKind::InvalidData, format!(
-            "Cannot parse measurement for line: \"{}\"", line
-        ))),
-    }
-}
-
-fn enqueue(measurement: Measurement) -> redis::RedisResult<()> {
-    let json = measurement.to_json();
-
-    let result = redis::Client::open("redis://127.0.0.1/")?
-        .get_connection()?
-        .rpush("measurements", &json);
-    
-    if result.is_ok() {
+    for line in read_lines(&args.serial_port)? {
+        let measurement = Measurement::from_line(&line?)?;
+        let json = measurement.to_json();
+        redis_conn.lpush(&args.redis_key, &json)?;
         println!("Enqueued measurement {}", json);
     }
 
-    result
+    unreachable!();
+}
+
+fn read_lines(port_str: &str) -> Result<Lines<BufReader<SystemPort>>> {
+    let mut port = open(port_str)?;
+    
+    port.configure(&PortSettings {
+        baud_rate: Baud9600,
+        char_size: Bits8,
+        parity: ParityNone,
+        stop_bits: Stop1,
+        flow_control: FlowNone
+    })?;
+
+    SerialPort::set_timeout(&mut port, Duration::from_secs(90))?;
+    
+    Ok(BufReader::new(port).lines())
 }
