@@ -44,7 +44,7 @@ fn run() -> Result<()> {
 
 fn flush(conn: &redis::Connection, key: &str, process: &ProcessFn) -> Result<()> {
     loop {
-        let jsons: Vec<String> = conn.lrange(key, -5, -1)?;
+        let jsons: Vec<String> = conn.lrange(key, -500, -1)?;
 
         if jsons.is_empty() {
             return Ok(());
