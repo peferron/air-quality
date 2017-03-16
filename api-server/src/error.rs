@@ -7,6 +7,7 @@ use std::result;
 pub enum Error {
     Args(String),
     Hyper(hyper::Error),
+    Influx(String),
     Io(io::Error),
     Json(serde_json::Error),
 }

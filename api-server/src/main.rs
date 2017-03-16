@@ -5,6 +5,7 @@ extern crate hyper;
 
 mod args;
 mod error;
+mod influx;
 mod measurement;
 
 use args::Args;
@@ -29,14 +30,18 @@ fn run() -> Result<()> {
     let args = Args::from_env()?;
     println!("Starting with {:?}", args);
 
-    let server = Server::http(&args.listen_addr[..])?;
-    server.handle(handle)?;
+    let client = influx::Client::new();
+
+    if true {
+        let server = Server::http(&args.listen_addr[..])?;
+        server.handle(move |req: Request, res: Response| handle(req, res, &client))?;
+    }
 
     Ok(())
 }
 
-fn handle(req: Request, res: Response) {
-    let res_body = match handle_req(req) {
+fn handle(req: Request, res: Response, client: &influx::Client) {
+    let res_body = match handle_req(req, &client) {
         Ok(()) => json!({"status": "ok"}),
         Err(e) => {
             println!("Error handling request: {:?}", e);
@@ -50,7 +55,7 @@ fn handle(req: Request, res: Response) {
     }
 }
 
-fn handle_req(mut req: Request) -> Result<()> {
+fn handle_req(mut req: Request, client: &influx::Client) -> Result<()> {
     if req.method != hyper::Post {
         return Err(Error::Io(io::Error::new(
             io::ErrorKind::InvalidData,
@@ -61,11 +66,6 @@ fn handle_req(mut req: Request) -> Result<()> {
     let mut req_body = String::new();
     req.read_to_string(&mut req_body)?;
 
-    println!("Received POST request: {}", req_body);
-
     let measurements: Vec<Measurement> = serde_json::from_str(&req_body)?;
-
-    println!("Measurements: {:?}", measurements);
-
-    Ok(())
+    client.write(&measurements)
 }
