@@ -43,7 +43,7 @@ fn run() -> Result<()> {
 
     for line in read_lines(&args.serial_port)? {
         let measurement = Measurement::from_line(&line?)?;
-        let json = measurement.to_json();
+        let json = serde_json::to_string(&measurement)?;
         conn.lpush(&args.redis_key, &json)?;
         println!("Enqueued measurement {}", json);
     }

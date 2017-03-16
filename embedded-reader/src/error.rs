@@ -1,3 +1,4 @@
+use serde_json;
 use std::{io, result};
 use serial;
 use redis;
@@ -6,6 +7,7 @@ use redis;
 pub enum Error {
     Args(String),
     Io(io::Error),
+    Json(serde_json::Error),
     Redis(redis::RedisError),
     Serial(serial::Error),
 }
@@ -15,6 +17,12 @@ pub type Result<T> = result::Result<T, Error>;
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Error {
         Error::Io(e)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        Error::Json(e)
     }
 }
 

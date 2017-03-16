@@ -1,6 +1,5 @@
 use chrono::{DateTime, Local};
 use error::Error;
-use serde_json;
 use std::io;
 
 #[derive(Serialize)]
@@ -28,9 +27,5 @@ impl Measurement {
             io::ErrorKind::InvalidData,
             format!("Cannot parse measurement for line: \"{}\"", line)
         )))
-    }
-
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
     }
 }
