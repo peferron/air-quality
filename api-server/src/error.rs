@@ -1,4 +1,5 @@
 use hyper;
+use serde_json;
 use std::io;
 use std::result;
 
@@ -7,6 +8,7 @@ pub enum Error {
     Args(String),
     Hyper(hyper::Error),
     Io(io::Error),
+    Json(serde_json::Error),
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -20,5 +22,11 @@ impl From<hyper::Error> for Error {
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Error {
         Error::Io(e)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        Error::Json(e)
     }
 }
