@@ -7,13 +7,15 @@ use std::io::Read;
 pub struct Client {
     http_client: hyper::client::Client,
     write_url: String,
+    line_prefix: String,
 }
 
 impl Client {
-    pub fn new() -> Client {
+    pub fn new(write_url: &str, line_prefix: &str) -> Client {
         Client {
             http_client: hyper::client::Client::new(),
-            write_url: String::from("http://127.0.0.1:8086/write?db=air_quality"),
+            write_url: String::from(write_url),
+            line_prefix: String::from(line_prefix),
         }
     }
 
@@ -22,10 +24,7 @@ impl Client {
         
         let lines: Vec<String> = measurements
             .iter()
-            .map(|m| format!(
-                "air_quality,sensor=Dylos_DC_1100_PRO,location=home {}",
-                m.to_influx_string()
-            ))
+            .map(|m| format!("{} {}", self.line_prefix, m.to_influx_string()))
             .collect();
 
         let req_body = lines.join("\n");

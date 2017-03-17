@@ -30,7 +30,7 @@ fn run() -> Result<()> {
     let args = Args::from_env()?;
     println!("Starting with {:?}", args);
 
-    let client = influx::Client::new();
+    let client = influx::Client::new(&args.influx_write_url, &args.influx_line_prefix);
 
     if true {
         let server = Server::http(&args.listen_addr[..])?;
