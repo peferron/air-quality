@@ -32,10 +32,9 @@ fn run() -> Result<()> {
 
     let client = influx::Client::new(&args.influx_write_url, &args.influx_line_prefix);
 
-    if true {
-        let server = Server::http(&args.listen_addr[..])?;
-        server.handle(move |req: Request, res: Response| handle(req, res, &client))?;
-    }
+    let mut server = Server::http(&args.listen_addr[..])?;
+    server.keep_alive(None);
+    server.handle(move |req: Request, res: Response| handle(req, res, &client))?;
 
     Ok(())
 }
