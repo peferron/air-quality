@@ -34,8 +34,8 @@ fn run() -> Result<()> {
     let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
 
     // loop {
-    //     let measurement = Measurement::from_line("123,456")?;
-    //     let json = measurement.to_json();
+    //     let measurement = Measurement::from_line("123,10")?;
+    //     let json = serde_json::to_string(&measurement)?;
     //     conn.lpush(&args.redis_key, &json)?;
     //     println!("Enqueued measurement {}", json);
     //     std::thread::sleep(std::time::Duration::from_secs(1));
