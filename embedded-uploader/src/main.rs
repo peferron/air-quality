@@ -17,6 +17,9 @@ use std::process;
 
 type ProcessFn = Fn(&[String]) -> Result<()>;
 
+const REDIS_KEY: &'static str = "measurements";
+const REDIS_TMP_KEY: &'static str = "measurements-tmp";
+
 fn main() {
     if let Err(e) = run() {
         match e {
@@ -37,9 +40,9 @@ fn run() -> Result<()> {
 
     let process = move |jsons: &[String]| upload(jsons, &client, &api_url);
 
-    flush(&conn, &args.redis_key, &process)?;
-    flush(&conn, &args.redis_tmp_key, &process)?;
-    watch(&conn, &args.redis_key, &args.redis_tmp_key, &process)
+    flush(&conn, REDIS_KEY, &process)?;
+    flush(&conn, REDIS_TMP_KEY, &process)?;
+    watch(&conn, &process)
 }
 
 fn flush(conn: &redis::Connection, key: &str, process: &ProcessFn) -> Result<()> {
@@ -55,11 +58,11 @@ fn flush(conn: &redis::Connection, key: &str, process: &ProcessFn) -> Result<()>
     }
 }
 
-fn watch(conn: &redis::Connection, key: &str, tmp_key: &str, process: &ProcessFn) -> Result<()> {
+fn watch(conn: &redis::Connection, process: &ProcessFn) -> Result<()> {
     loop {
-        let json: String = conn.brpoplpush(key, tmp_key, 90)?;
+        let json: String = conn.brpoplpush(REDIS_KEY, REDIS_TMP_KEY, 90)?;
         process(&[json])?;
-        conn.lpop(tmp_key)?;
+        conn.lpop(REDIS_TMP_KEY)?;
     }
 }
 
