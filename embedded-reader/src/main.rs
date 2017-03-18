@@ -1,16 +1,18 @@
 extern crate chrono;
 extern crate redis;
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate serde_json;
+extern crate serde_json;
 extern crate serial;
 
 mod args;
 mod dylos;
 mod error;
+mod measurement;
 
 use args::Args;
 use chrono::Local;
 use error::{Error, Result};
+use measurement::Measurement;
 use redis::Commands;
 use serial::*;
 use std::time::Duration;
@@ -36,15 +38,17 @@ fn run() -> Result<()> {
     let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
 
     for line in read_lines(&args.serial_port)? {
-        let json = json!({
-            "time": Local::now(),
-            "tags": &args.tags,
-            "fields": dylos::parse(&line?)?,
-        });
+        let measurement = Measurement {
+            time: Local::now(),
+            tags: &args.tags,
+            fields: &dylos::parse(&line?)?,
+        };
 
-        conn.lpush(REDIS_KEY, &json.to_string())?;
+        let json = serde_json::to_string(&measurement)?;
 
-        println!("Enqueued measurement {}", json);
+        conn.lpush(REDIS_KEY, &json)?;
+
+        println!("Enqueued measurement: {}", json);
     }
 
     unreachable!();

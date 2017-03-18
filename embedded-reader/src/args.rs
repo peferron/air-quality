@@ -11,7 +11,6 @@ pub struct Args {
 
 impl Args {
     pub fn from_env() -> Result<Args> {
-        println!("{:#?}", env::args().collect::<Vec<String>>());
         Args::from(env::args())
     }
 
@@ -21,7 +20,7 @@ impl Args {
         let usage = || Error::Args(format!(
             "Usage: {path} SERIAL_PORT REDIS_URL [TAG_KEY=TAG_VALUE ...]\n\
             Example: {path} /dev/cu.usbserial redis://127.0.0.1 sensor=Dylos_DC_1100_PRO location=home",
-            path=path
+            path = path
         ));
 
         Ok(Args {
