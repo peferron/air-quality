@@ -6,6 +6,7 @@ use redis;
 #[derive(Debug)]
 pub enum Error {
     Args(String),
+    Dylos(String),
     Io(io::Error),
     Json(serde_json::Error),
     Redis(redis::RedisError),

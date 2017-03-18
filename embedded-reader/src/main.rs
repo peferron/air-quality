@@ -1,27 +1,29 @@
 extern crate chrono;
 extern crate redis;
 #[macro_use] extern crate serde_derive;
-extern crate serde_json;
+#[macro_use] extern crate serde_json;
 extern crate serial;
 
 mod args;
+mod dylos;
 mod error;
-mod measurement;
 
 use args::Args;
+use chrono::Local;
 use error::{Error, Result};
-use measurement::Measurement;
 use redis::Commands;
 use serial::*;
 use std::time::Duration;
 use std::io::{BufRead, BufReader, Lines};
 use std::process;
 
+const REDIS_KEY: &'static str = "measurements";
+
 fn main() {
     if let Err(e) = run() {
         match e {
             Error::Args(usage) => println!("{}", usage),
-            _ => println!("Fatal error: {:?}", e),
+            _ => println!("Fatal error: {:#?}", e),
         }
         process::exit(1);
     }
@@ -29,22 +31,19 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = Args::from_env()?;
-    println!("Starting with {:?}", args);
+    println!("Starting with {:#?}", args);
 
     let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
 
-    // loop {
-    //     let measurement = Measurement::from_line("123,10")?;
-    //     let json = serde_json::to_string(&measurement)?;
-    //     conn.lpush(&args.redis_key, &json)?;
-    //     println!("Enqueued measurement {}", json);
-    //     std::thread::sleep(std::time::Duration::from_secs(1));
-    // }
-
     for line in read_lines(&args.serial_port)? {
-        let measurement = Measurement::from_line(&line?)?;
-        let json = serde_json::to_string(&measurement)?;
-        conn.lpush(&args.redis_key, &json)?;
+        let json = json!({
+            "time": Local::now(),
+            "tags": &args.tags,
+            "fields": dylos::parse(&line?)?,
+        });
+
+        conn.lpush(REDIS_KEY, &json.to_string())?;
+
         println!("Enqueued measurement {}", json);
     }
 
@@ -62,7 +61,7 @@ fn read_lines(port_str: &str) -> Result<Lines<BufReader<SystemPort>>> {
         flow_control: FlowNone
     })?;
 
-    SerialPort::set_timeout(&mut port, Duration::from_secs(90))?;
+    SerialPort::set_timeout(&mut port, Duration::from_secs(4000))?;
     
     Ok(BufReader::new(port).lines())
 }

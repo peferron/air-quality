@@ -1,3 +1,3 @@
 #!/bin/sh
 
-rerun -cx -p '**/*.rs' -- cargo run /dev/cu.usbserial redis://127.0.0.1 measurements
+rerun -cx -p '**/*.rs' -- cargo run /dev/cu.usbserial redis://127.0.0.1 sensor=Dylos_DC1100_PRO location=home
