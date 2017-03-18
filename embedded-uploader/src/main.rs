@@ -24,7 +24,7 @@ fn main() {
     if let Err(e) = run() {
         match e {
             Error::Args(usage) => println!("{}", usage),
-            _ => println!("Fatal error: {:?}", e),
+            _ => println!("Fatal error: {:#?}", e),
         }
         process::exit(1);
     }
@@ -32,7 +32,7 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = Args::from_env()?;
-    println!("Starting with {:?}", args);
+    println!("Starting with {:#?}", args);
 
     let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
     let client = Client::new();
@@ -67,7 +67,8 @@ fn watch(conn: &redis::Connection, process: &ProcessFn) -> Result<()> {
 }
 
 fn upload(jsons: &[String], client: &Client, url: &str) -> Result<()> {
-    println!("Uploading {} measurements", jsons.len());
+    println!("Uploading {} measurements, last: {}",
+        jsons.len(), jsons.last().unwrap_or(&String::from("None")));
 
     let json = format!("[{}]", jsons.join(","));
     let mut response = client.post(url).body(&json).send()?;
@@ -78,9 +79,9 @@ fn upload(jsons: &[String], client: &Client, url: &str) -> Result<()> {
 
     let parsed_response: Response = serde_json::from_str(&response_body)?;
 
-    if parsed_response.status != "ok" {
-        Err(Error::Response(parsed_response.err))
-    } else {
+    if parsed_response.status == "ok" {
         Ok(())
+    } else {
+        Err(Error::Response(parsed_response.err))
     }
 }

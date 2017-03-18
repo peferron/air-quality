@@ -9,19 +9,21 @@ pub struct Args {
 
 impl Args {
     pub fn from_env() -> Result<Args> {
-        let args: Vec<_> = env::args().collect();
+        Args::from(env::args())
+    }
 
-        if args.len() < 5 {
-            return Err(Error::Args(format!(
+    pub fn from(mut args: env::Args) -> Result<Args> {
+        let path = args.next().unwrap();
+
+        let usage = || Error::Args(format!(
                 "Usage: {path} REDIS_URL API_URL\n\
-                Example: {path} redis://127.0.0.1 http://example.com/air-quality/api",
-                path=args[0]
-            )));
-        }
+                Example: {path} redis://127.0.0.1 http://example.com/air-quality/api/measurements",
+                path = path
+        ));
 
         Ok(Args {
-            redis_url: args[1].clone(),
-            api_url: args[4].clone(),
+            redis_url: args.next().ok_or_else(&usage)?,
+            api_url: args.next().ok_or_else(&usage)?,
         })
     }
 }
