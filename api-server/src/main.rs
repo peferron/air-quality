@@ -20,7 +20,7 @@ fn main() {
     if let Err(e) = run() {
         match e {
             Error::Args(usage) => println!("{}", usage),
-            _ => println!("Fatal error: {:?}", e),
+            _ => println!("Fatal error: {:#?}", e),
         }
         process::exit(1);
     }
@@ -28,9 +28,9 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = Args::from_env()?;
-    println!("Starting with {:?}", args);
+    println!("Starting with {:#?}", args);
 
-    let client = influx::Client::new(&args.influx_write_url, &args.influx_line_prefix);
+    let client = influx::Client::new(&args.influx_write_url, &args.influx_measurement_name);
 
     let mut server = Server::http(&args.listen_addr[..])?;
     server.keep_alive(None);

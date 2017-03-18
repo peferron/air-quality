@@ -5,25 +5,27 @@ use std::env;
 pub struct Args {
     pub listen_addr: String,
     pub influx_write_url: String,
-    pub influx_line_prefix: String,
+    pub influx_measurement_name: String,
 }
 
 impl Args {
     pub fn from_env() -> Result<Args> {
-        let args: Vec<_> = env::args().collect();
+        Args::from(env::args())
+    }
 
-        if args.len() < 4 {
-            return Err(Error::Args(format!(
-                "Usage: {path} LISTEN_ADDR INFLUX_WRITE_URL INFLUX_LINE_PREFIX\n\
-                Example: {path} 127.0.0.1:8080 http://127.0.0.1:8086/write?db=air_quality air_quality,sensor=Dylos_DC_1100_PRO,location=home",
-                path=args[0]
-            )));
-        }
+    pub fn from(mut args: env::Args) -> Result<Args> {
+        let path = args.next().unwrap();
+
+        let usage = || Error::Args(format!(
+            "Usage: {path} LISTEN_ADDR INFLUX_WRITE_URL INFLUX_MEASUREMENT_NAME\n\
+            Example: {path} 127.0.0.1:8080 http://127.0.0.1:8086/write?db=test air_quality",
+            path = path
+        ));
 
         Ok(Args {
-            listen_addr: args[1].clone(),
-            influx_write_url: args[2].clone(),
-            influx_line_prefix: args[3].clone(),
+            listen_addr: args.next().ok_or_else(&usage)?,
+            influx_write_url: args.next().ok_or_else(&usage)?,
+            influx_measurement_name: args.next().ok_or_else(&usage)?,
         })
     }
 }

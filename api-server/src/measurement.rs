@@ -1,19 +1,29 @@
 use chrono::{DateTime, Local};
+use std::collections::HashMap;
+use std::fmt::Display;
 
 #[derive(Debug, Deserialize)]
 pub struct Measurement {
+    pub tags: HashMap<String, String>,
+    pub fields: HashMap<String, f64>,
     pub time: DateTime<Local>,
-    pub small_particle_count: i32,
-    pub large_particle_count: i32,
 }
 
 impl Measurement {
     pub fn to_influx_string(&self) -> String {
         format!(
-            "small_particle_count={s},large_particle_count={l} {t}",
-            s=self.small_particle_count,
-            l=self.large_particle_count,
-            t=self.time.timestamp() * 1_000_000_000 + self.time.timestamp_subsec_nanos() as i64,
+            "{tags} {fields} {time}",
+            tags = to_influx_string(&self.tags),
+            fields = to_influx_string(&self.fields),
+            time = self.time.timestamp() * 1_000_000_000 + self.time.timestamp_subsec_nanos() as i64
         )
     }
+}
+
+fn to_influx_string<V>(map: &HashMap<String, V>) -> String where V: Display {
+    map
+        .iter()
+        .map(|(k, v)| format!("{}={}", k, v))
+        .collect::<Vec<String>>()
+        .join(",")
 }

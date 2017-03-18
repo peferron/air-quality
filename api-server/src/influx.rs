@@ -7,25 +7,26 @@ use std::io::Read;
 pub struct Client {
     http_client: hyper::client::Client,
     write_url: String,
-    line_prefix: String,
+    influx_measurement_name: String,
 }
 
 impl Client {
-    pub fn new(write_url: &str, line_prefix: &str) -> Client {
+    pub fn new(write_url: &str, influx_measurement_name: &str) -> Client {
         Client {
             http_client: hyper::client::Client::new(),
             write_url: String::from(write_url),
-            line_prefix: String::from(line_prefix),
+            influx_measurement_name: String::from(influx_measurement_name),
         }
     }
 
-    pub fn write(&self, measurements: &[Measurement]) -> Result<()> {
-        println!("Writing {} measurements", measurements.len());
-        
+    pub fn write(&self, measurements: &[Measurement]) -> Result<()> {      
         let lines: Vec<String> = measurements
             .iter()
-            .map(|m| format!("{} {}", self.line_prefix, m.to_influx_string()))
+            .map(|m| format!("{},{}", self.influx_measurement_name, m.to_influx_string()))
             .collect();
+
+        println!("Writing {} measurements to Influx, last: {}",
+            lines.len(), lines.last().unwrap_or(&String::from("None")));
 
         let req_body = lines.join("\n");
 
@@ -33,7 +34,7 @@ impl Client {
         let mut response_body = String::new();
         response.read_to_string(&mut response_body)?;
 
-        println!("Received response: {} {}", response.status, response_body);
+        println!("Received response from Influx: {} {}", response.status, response_body);
 
         match response.status {
             StatusCode::NoContent => Ok(()),
