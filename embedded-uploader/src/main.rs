@@ -60,7 +60,7 @@ fn flush(conn: &redis::Connection, key: &str, process: &ProcessFn) -> Result<()>
 
 fn watch(conn: &redis::Connection, process: &ProcessFn) -> Result<()> {
     loop {
-        let json: String = conn.brpoplpush(REDIS_KEY, REDIS_TMP_KEY, 90)?;
+        let json: String = conn.brpoplpush(REDIS_KEY, REDIS_TMP_KEY, 4000)?;
         process(&[json])?;
         conn.lpop(REDIS_TMP_KEY)?;
     }
