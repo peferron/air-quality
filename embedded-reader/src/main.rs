@@ -35,7 +35,7 @@ fn run() -> Result<()> {
     let args = Args::from_env()?;
     println!("Starting with {:#?}", args);
 
-    let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
+    let conn = redis::Client::open(args.redis_url.as_ref())?.get_connection()?;
 
     for line in read_lines(&args.serial_port)? {
         let measurement = Measurement {
@@ -56,7 +56,7 @@ fn run() -> Result<()> {
 
 fn read_lines(port_str: &str) -> Result<Lines<BufReader<SystemPort>>> {
     let mut port = open(port_str)?;
-    
+
     port.configure(&PortSettings {
         baud_rate: Baud9600,
         char_size: Bits8,
@@ -66,6 +66,6 @@ fn read_lines(port_str: &str) -> Result<Lines<BufReader<SystemPort>>> {
     })?;
 
     SerialPort::set_timeout(&mut port, Duration::from_secs(4000))?;
-    
+
     Ok(BufReader::new(port).lines())
 }

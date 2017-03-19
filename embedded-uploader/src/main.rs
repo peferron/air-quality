@@ -34,7 +34,7 @@ fn run() -> Result<()> {
     let args = Args::from_env()?;
     println!("Starting with {:#?}", args);
 
-    let conn = redis::Client::open(&args.redis_url[..])?.get_connection()?;
+    let conn = redis::Client::open(args.redis_url.as_ref())?.get_connection()?;
     let client = Client::new();
     let api_url = args.api_url.clone();
 
