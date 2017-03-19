@@ -10,6 +10,7 @@ pub enum Error {
     Influx(String),
     Io(io::Error),
     Json(serde_json::Error),
+    Measurement(String),
 }
 
 pub type Result<T> = result::Result<T, Error>;

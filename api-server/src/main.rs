@@ -65,6 +65,11 @@ fn handle_req(mut req: Request, client: &influx::Client) -> Result<()> {
     let mut req_body = String::new();
     req.read_to_string(&mut req_body)?;
 
-    let measurements: Vec<Measurement> = serde_json::from_str(&req_body)?;
+    let mut measurements: Vec<Measurement> = serde_json::from_str(&req_body)?;
+
+    for m in &mut measurements {
+        m.fill()?;
+    }
+
     client.write(&measurements)
 }
