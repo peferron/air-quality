@@ -1,4 +1,5 @@
 extern crate hyper;
+extern crate hyper_rustls;
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
 extern crate redis;
@@ -10,6 +11,8 @@ mod response;
 use args::Args;
 use error::{Error, Result};
 use hyper::client::Client;
+use hyper::net::HttpsConnector;
+use hyper_rustls::TlsClient;
 use redis::Commands;
 use response::Response;
 use std::io::Read;
@@ -35,7 +38,8 @@ fn run() -> Result<()> {
     println!("Starting with {:#?}", args);
 
     let conn = redis::Client::open(args.redis_url.as_ref())?.get_connection()?;
-    let client = Client::new();
+
+    let client = Client::with_connector(HttpsConnector::new(TlsClient::new()));
     let api_url = args.api_url.clone();
 
     let process = move |jsons: &[String]| upload(jsons, &client, &api_url);
