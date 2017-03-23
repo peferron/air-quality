@@ -18,7 +18,8 @@ impl Args {
 
         let usage = || Error::Args(format!(
             "Usage: {path} LISTEN_ADDR INFLUX_WRITE_URL INFLUX_MEASUREMENT_NAME\n\
-            Example: {path} 127.0.0.1:8080 http://127.0.0.1:8086/write?db=test air_quality",
+            Example: {path} 127.0.0.1:8080 http://127.0.0.1:8086/write?db=test air_quality\n\
+            Optional: For authentication, set the INFLUX_USERNAME and INFLUX_PASSWORD environment variables.",
             path = path
         ));
 

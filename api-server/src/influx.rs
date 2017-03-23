@@ -1,8 +1,10 @@
 use error::{Error, Result};
 use hyper;
+use hyper::header::{Authorization, Basic};
 use hyper::status::StatusCode;
 use measurement::Measurement;
 use std::collections::HashMap;
+use std::env;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -32,15 +34,24 @@ impl Client {
 
         let req_body = lines.join("\n");
 
-        let mut response = self.http_client.post(&self.write_url).body(&req_body).send()?;
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body)?;
+        let mut req = self.http_client
+            .post(&self.write_url)
+            .body(&req_body);
 
-        println!("Received response from Influx: {} {}", response.status, response_body);
+        if let (Ok(u), Ok(p)) = (env::var("INFLUX_USERNAME"), env::var("INFLUX_PASSWORD")) {
+            println!("Authenticating as user \"{}\"",u);
+            req = req.header(Authorization(Basic { username: u, password: Some(p) }));
+        }
 
-        match response.status {
+        let mut res = req.send()?;
+        let mut res_body = String::new();
+        res.read_to_string(&mut res_body)?;
+
+        println!("Received response from Influx: {} {}", res.status, res_body);
+
+        match res.status {
             StatusCode::NoContent => Ok(()),
-            _ => Err(Error::Influx(format!("{} {}", response.status, response_body)))
+            _ => Err(Error::Influx(format!("{} {}", res.status, res_body)))
         }
     }
 }
