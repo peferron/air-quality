@@ -1,6 +1,6 @@
 # Air Quality
 
-Reads air quality measurements from a Dylos DC1100 PRO via Serial / RS-232 and pipes it through Redis, InfluxDB and Grafana to finally display in a live dashboard.
+Reads air quality measurements from a Dylos DC1100 PRO via Serial / RS-232 and pipes it through Redis running on a Raspberry Pi, InfluxDB and Grafana to finally display in a live dashboard.
 
 Written in Rust. No tests because it's a toy project. :)
 
