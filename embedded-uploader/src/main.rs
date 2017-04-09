@@ -11,10 +11,12 @@ mod response;
 use args::Args;
 use error::{Error, Result};
 use hyper::client::Client;
+use hyper::header::{Authorization, Basic};
 use hyper::net::HttpsConnector;
 use hyper_rustls::TlsClient;
 use redis::Commands;
 use response::Response;
+use std::env;
 use std::io::Read;
 use std::process;
 
@@ -75,17 +77,24 @@ fn upload(jsons: &[String], client: &Client, url: &str) -> Result<()> {
         jsons.len(), jsons.last().unwrap_or(&String::from("None")));
 
     let json = format!("[{}]", jsons.join(","));
-    let mut response = client.post(url).body(&json).send()?;
-    let mut response_body = String::new();
-    response.read_to_string(&mut response_body)?;
+    let mut req = client.post(url).body(&json);
 
-    println!("Received response: {}", response_body);
+    if let (Ok(u), Ok(p)) = (env::var("API_SERVER_USERNAME"), env::var("API_SERVER_PASSWORD")) {
+        println!("Authenticating as user \"{}\"",u);
+        req = req.header(Authorization(Basic { username: u, password: Some(p) }));
+    }
 
-    let parsed_response: Response = serde_json::from_str(&response_body)?;
+    let mut res = req.send()?;
+    let mut res_body = String::new();
+    res.read_to_string(&mut res_body)?;
 
-    if parsed_response.status == "ok" {
+    println!("Received response: {}", res_body);
+
+    let response: Response = serde_json::from_str(&res_body)?;
+
+    if response.status == "ok" {
         Ok(())
     } else {
-        Err(Error::Response(parsed_response.err))
+        Err(Error::Response(response.err))
     }
 }

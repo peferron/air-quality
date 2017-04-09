@@ -17,7 +17,8 @@ impl Args {
 
         let usage = || Error::Args(format!(
                 "Usage: {path} REDIS_URL API_URL\n\
-                Example: {path} redis://127.0.0.1 http://example.com/air-quality/api/measurements",
+                Example: {path} redis://127.0.0.1 http://example.com/air-quality/api/measurements\n\
+                Optional: For authentication, set the API_SERVER_USERNAME and API_SERVER_PASSWORD environment variables.",
                 path = path
         ));
 
