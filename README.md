@@ -6,3 +6,4 @@ Written in Rust. No tests because it's a toy project. :)
 
 See [Measuring air quality in my home (part 1)](https://peferron.com/2017/03/23/measuring-air-quality-part-1/).
 
+![Dashboard](screenshot.png?raw=true)
